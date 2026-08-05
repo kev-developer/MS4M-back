@@ -1,0 +1,20 @@
+[project]
+name = "ms4m-back"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "kev-developer", email = "kevpersonal3@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.141.1",
+    "networkx[default]>=3.6.1",
+]
+
+[project.scripts]
+ms4m-back = "ms4m_back:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
