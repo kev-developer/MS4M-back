@@ -44,6 +44,7 @@ class SimulationEngine:
         self.time_multiplier = time_multiplier
         self.speed_min = speed_min
         self.speed_max = speed_max
+        self._last_time: Optional[float] = None
 
     def _assign_random_routes(self):
         loads = self.graph_service.loads
@@ -81,19 +82,28 @@ class SimulationEngine:
     def stop(self):
         self.is_running = False
 
+    def set_time_multiplier(self, value: float):
+        """Cambia time_multiplier y reinicia el reloj de simulación para evitar saltos."""
+        if value <= 0:
+            raise ValueError("time_multiplier debe ser > 0")
+        self.time_multiplier = value
+        # Reiniciar el reloj para evitar que el siguiente dt sea enorme
+        if self.is_running:
+            self._last_time = time.time()
+
     async def _simulation_loop(self):
-        last_time = time.time()
-        
+        self._last_time = time.time()
+
         while self.is_running:
             current_time = time.time()
-           
-            dt = (current_time - last_time) * self.time_multiplier 
-            last_time = current_time
+
+            dt = (current_time - self._last_time) * self.time_multiplier
+            self._last_time = current_time
 
             for truck in self.trucks:
                 if truck.status == "MOVING":
                     self._update_truck(truck, dt)
-            
+
             await asyncio.sleep(self.update_interval)
 
     def _update_truck(self, truck: Truck, dt: float):

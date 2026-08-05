@@ -112,10 +112,11 @@ def update_config(
     changes = {}
 
     if time_multiplier is not None:
-        if time_multiplier <= 0:
-            return {"error": "time_multiplier debe ser > 0"}
-        simulation_engine.time_multiplier = time_multiplier
-        changes["time_multiplier"] = time_multiplier
+        try:
+            simulation_engine.set_time_multiplier(time_multiplier)
+            changes["time_multiplier"] = time_multiplier
+        except ValueError as e:
+            return {"error": str(e)}
 
     if speed_min is not None:
         if speed_min <= 0:
