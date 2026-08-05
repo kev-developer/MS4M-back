@@ -2,6 +2,8 @@ import json
 import math
 import networkx as nx
 from typing import List, Tuple
+from pydantic import ValidationError
+from ..schemas.schemas import DataFile
 
 def haversine_distance(coord1: List[float], coord2: List[float]) -> float:
     R = 6371000  # Radio de la Tierra en metros
@@ -26,13 +28,25 @@ class GraphService:
         self._load_data(json_path)
 
     def _load_data(self, json_path: str):
-        """Carga el JSON y delega la construcción del grafo."""
-        with open(json_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        """Carga el JSON, valida estructura y delega la construcción del grafo."""
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                raw_data = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Archivo de datos no encontrado: {json_path}")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"JSON inválido: {e}")
 
-        self.loads = data.get('Load', [])
-        self.dumps = data.get('Dump', [])
-        self.routes_data = data.get('Routes', [])
+        # Validar contra esquema Pydantic
+        try:
+            validated_data = DataFile(**raw_data)
+        except ValidationError as e:
+            error_details = '; '.join([f"{err['loc'][0]}: {err['msg']}" for err in e.errors()])
+            raise ValueError(f"Datos inválidos en JSON: {error_details}")
+
+        self.loads = [item.model_dump() for item in validated_data.Load]
+        self.dumps = [item.model_dump() for item in validated_data.Dump]
+        self.routes_data = [item.model_dump() for item in validated_data.Routes]
 
         self._build_graph()
 

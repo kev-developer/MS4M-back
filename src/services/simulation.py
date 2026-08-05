@@ -9,12 +9,13 @@ from .routing_service import RoutingService
 class Truck:
     def __init__(self, truck_id: str):
         self.truck_id = truck_id
-        self.status = "IDLE" # Estados: IDLE, MOVING, FINISHED, ERROR
+        self.status = "IDLE"
         self.route: List[Tuple[float, float]] = []
         self.route_index = 0
         self.current_pos: Tuple[float, float] = (0.0, 0.0)
         self.current_speed = 0.0
         self.history = []
+        self.error_reason: Optional[str] = None
 
     def assign_route(self, route: List[Tuple[float, float]]):
         self.route = route
@@ -22,18 +23,27 @@ class Truck:
         self.current_pos = route[0]
         self.status = "MOVING"
         self.history = []
+        self.error_reason = None
+
+    def mark_error(self, reason: str):
+        self.status = "ERROR"
+        self.error_reason = reason
 
 class SimulationEngine:
-    def __init__(self, graph_service, seed: Optional[int] = None):
+    def __init__(self, graph_service, seed: Optional[int] = None,
+                 speed_min: float = 40.0, speed_max: float = 80.0,
+                 time_multiplier: float = 5.0):
         if seed is not None:
             random.seed(seed)
-            
+
         self.graph_service = graph_service
         self.trucks = [Truck(f"CAM-{i:03d}") for i in range(1, 6)]
-        
+
         self.is_running = False
         self.update_interval = 0.1
-        self.time_multiplier = 5.0
+        self.time_multiplier = time_multiplier
+        self.speed_min = speed_min
+        self.speed_max = speed_max
 
     def _assign_random_routes(self):
         loads = self.graph_service.loads
@@ -42,20 +52,23 @@ class SimulationEngine:
 
         for truck in self.trucks:
             valid_route = None
+            last_load = None
+            last_dump = None
             attempts = 0
-            
+
             while not valid_route and attempts < 100:
-                load = random.choice(loads)
-                dump = random.choice(dumps)
+                last_load = random.choice(loads)
+                last_dump = random.choice(dumps)
                 valid_route = RoutingService.calculate_route(
-                    graph, load['coor'], dump['coor']
+                    graph, last_load['coor'], last_dump['coor']
                 )
                 attempts += 1
-            
+
             if valid_route:
                 truck.assign_route(valid_route)
             else:
-                truck.status = "ERROR"
+                reason = f"No hay ruta conectada entre '{last_load['name']}' y '{last_dump['name']}' después de 100 intentos"
+                truck.mark_error(reason)
 
     async def start(self):
         if self.is_running:
@@ -84,8 +97,7 @@ class SimulationEngine:
             await asyncio.sleep(self.update_interval)
 
     def _update_truck(self, truck: Truck, dt: float):
-        
-        speed_kmh = random.uniform(40.0, 80.0)
+        speed_kmh = random.uniform(self.speed_min, self.speed_max)
         truck.current_speed = speed_kmh
         
         truck.history.append({

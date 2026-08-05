@@ -1,0 +1,3 @@
+# Uso de SSE
+
+Para transmitir las posiciones de los camiones elegí Server-Sent Events (SSE) en lugar de WebSockets o Polling. Dado que el flujo de datos es estrictamente unidireccional (del servidor al cliente) y continuo, SSE proporciona una conexión persistente más ligera y nativa sobre HTTP, facilitando el manejo de reconexiones automáticas en el cliente sin la complejidad bidireccional que requiere un WebSocket. Si tuviera más tiempo o si los camiones requirieran recibir comandos en tiempo real del usuario, habría migrado a WebSockets.

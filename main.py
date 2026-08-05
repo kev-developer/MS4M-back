@@ -27,10 +27,21 @@ app.add_middleware(
 BASE_DIR = Path(__file__).resolve().parent
 
 JSON_PATH = BASE_DIR / "data" / "data-prueba.json"
-graph_service = GraphService(json_path=str(JSON_PATH))
 
-# Pasamos una semilla (seed=42) para que las rutas iniciales sean predecibles en desarrollo
-simulation_engine = SimulationEngine(graph_service=graph_service, seed=42)
+try:
+    graph_service = GraphService(json_path=str(JSON_PATH))
+except (FileNotFoundError, ValueError) as e:
+    print(f"❌ Error al cargar datos: {e}")
+    exit(1)
+
+# Configuración de simulación: speed_min/max en km/h, time_multiplier es aceleración (5.0x = 5 veces más rápido)
+simulation_engine = SimulationEngine(
+    graph_service=graph_service,
+    seed=42,
+    speed_min=40.0,
+    speed_max=80.0,
+    time_multiplier=5.0
+)
 
 @app.get("/tramos")
 def get_tramos():
@@ -67,7 +78,8 @@ async def stream_simulation():
                     "status": truck.status,
                     "lat": truck.current_pos[0],
                     "lng": truck.current_pos[1],
-                    "speed": round(truck.current_speed, 2)
+                    "speed": round(truck.current_speed, 2),
+                    "error_reason": truck.error_reason
                 }
                 for truck in simulation_engine.trucks
             ]
@@ -84,3 +96,44 @@ async def stream_simulation():
 def get_report():
     report = ReportService.generate_report(simulation_engine.trucks)
     return report
+
+@app.post("/simulacion/config")
+def update_config(
+    time_multiplier: float | None = None,
+    speed_min: float | None = None,
+    speed_max: float | None = None
+):
+    """Actualiza parámetros de simulación en tiempo de ejecución.
+
+    - time_multiplier: aceleración de tiempo (ej. 5.0 = 5x más rápido)
+    - speed_min: velocidad mínima en km/h
+    - speed_max: velocidad máxima en km/h
+    """
+    changes = {}
+
+    if time_multiplier is not None:
+        if time_multiplier <= 0:
+            return {"error": "time_multiplier debe ser > 0"}
+        simulation_engine.time_multiplier = time_multiplier
+        changes["time_multiplier"] = time_multiplier
+
+    if speed_min is not None:
+        if speed_min <= 0:
+            return {"error": "speed_min debe ser > 0"}
+        simulation_engine.speed_min = speed_min
+        changes["speed_min"] = speed_min
+
+    if speed_max is not None:
+        if speed_max <= 0:
+            return {"error": "speed_max debe ser > 0"}
+        simulation_engine.speed_max = speed_max
+        changes["speed_max"] = speed_max
+
+    if not changes:
+        return {"message": "Sin cambios", "current": {
+            "time_multiplier": simulation_engine.time_multiplier,
+            "speed_min": simulation_engine.speed_min,
+            "speed_max": simulation_engine.speed_max
+        }}
+
+    return {"message": "Configuración actualizada", "changes": changes}
