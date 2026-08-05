@@ -12,7 +12,7 @@ from pathlib import Path
 origins = [
     "http://localhost:5173",
     "http://localhost:5174",
-    "https://est-react.vercel.app"
+    "https://MS4M-front.vercel.app"
     ]
 
 app = FastAPI()
@@ -31,7 +31,7 @@ JSON_PATH = BASE_DIR / "data" / "data-prueba.json"
 try:
     graph_service = GraphService(json_path=str(JSON_PATH))
 except (FileNotFoundError, ValueError) as e:
-    print(f"❌ Error al cargar datos: {e}")
+    print(f"Error al cargar datos: {e}")
     exit(1)
 
 # Configuración de simulación: speed_min/max en km/h, time_multiplier es aceleración (5.0x = 5 veces más rápido)
