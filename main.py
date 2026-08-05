@@ -2,6 +2,7 @@ import asyncio
 import json
 from fastapi.responses import StreamingResponse
 from src.services.simulation import SimulationEngine
+from src.services.report_service import ReportService
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +11,7 @@ from pathlib import Path
 
 origins = [
     "http://localhost:5173",
+    "http://localhost:5174",
     "https://est-react.vercel.app"
     ]
 
@@ -77,3 +79,8 @@ async def stream_simulation():
             await asyncio.sleep(simulation_engine.update_interval)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.get("/reporte")
+def get_report():
+    report = ReportService.generate_report(simulation_engine.trucks)
+    return report

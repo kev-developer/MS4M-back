@@ -32,8 +32,8 @@ class SimulationEngine:
         self.trucks = [Truck(f"CAM-{i:03d}") for i in range(1, 6)]
         
         self.is_running = False
-        self.update_interval = 1.0
-        self.time_multiplier = 30.0
+        self.update_interval = 0.1
+        self.time_multiplier = 5.0
 
     def _assign_random_routes(self):
         loads = self.graph_service.loads
