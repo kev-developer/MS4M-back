@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from services.graph_service import GraphService
+from src.services.graph_service import GraphService
+from pathlib import Path
 
 origins = [
     "http://localhost:5173",
@@ -17,13 +18,13 @@ app.add_middleware(
     allow_headers = ["*"],
     )
 
+BASE_DIR = Path(__file__).resolve().parent
 
-# Cargamos el grafo en memoria al arrancar la app
-graph_service = GraphService(json_path="../data/datos_prueba.json")
+JSON_PATH = BASE_DIR / "data" / "data-prueba.json"
+graph_service = GraphService(json_path=str(JSON_PATH))
 
 @app.get("/tramos")
 def get_tramos():
-    # Retornamos los datos para que el Frontend dibuje el mapa
     return graph_service.routes_data
 
 
