@@ -12,7 +12,8 @@ from pathlib import Path
 origins = [
     "http://localhost:5173",
     "http://localhost:5174",
-    "https://MS4M-front.vercel.app"
+    "https://MS4M-front.vercel.app",
+    "https://ms-4-m-front.vercel.app"
     ]
 
 app = FastAPI()
